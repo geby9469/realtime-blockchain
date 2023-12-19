@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -59,13 +60,15 @@ func createTransaction(transactionSize int) []Transaction {
 		transaction.RemainingTime = remainingtime
 
 		transactionSum := bytes.Join([][]byte{
+			[]byte(strconv.Itoa(i)),
+			[]byte(stringWithCharset(16, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")),
 			[]byte(now.String()),
 			[]byte(deadline.String()),
 			[]byte(strconv.Itoa(priority)),
 			[]byte(strconv.Itoa(threshold)),
 			[]byte(strconv.Itoa(remainingtime)),
 		}, []byte{})
-		transaction.TransactionID = BytesToHash(transactionSum)
+		transaction.TransactionID = sha256.Sum256(transactionSum)
 
 		transactions = append(transactions, *transaction)
 	}
@@ -85,4 +88,13 @@ func (h *Hash) SetBytes(b []byte) {
 	}
 
 	copy(h[32-len(b):], b)
+}
+
+func stringWithCharset(length int, charset string) string {
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
 }
