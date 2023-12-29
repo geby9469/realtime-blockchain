@@ -22,8 +22,10 @@ type Transaction struct {
 }
 
 func main() {
-	// submit transactions into the blockchain
-	submitTransaction(createTransaction(20), 10)
+	totalTx := createTransaction(20) // total transaction
+	sendRate := 10                   // amount of transaction per one second
+
+	submitTransaction(totalTx, sendRate)
 }
 
 func submitTransaction(transactions []Transaction, sendRate int) {
@@ -58,22 +60,26 @@ func createTransaction(transactionSize int) []Transaction {
 		transaction.Timestamp = now
 		transaction.Deadline = deadline
 		transaction.RemainingTime = remainingtime
-
-		transactionSum := bytes.Join([][]byte{
-			[]byte(strconv.Itoa(i)),
-			[]byte(stringWithCharset(16, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")),
-			[]byte(now.String()),
-			[]byte(deadline.String()),
-			[]byte(strconv.Itoa(priority)),
-			[]byte(strconv.Itoa(threshold)),
-			[]byte(strconv.Itoa(remainingtime)),
-		}, []byte{})
-		transaction.TransactionID = sha256.Sum256(transactionSum)
+		transaction.TransactionID = createHash(i, priority, threshold, remainingtime, now, deadline)
 
 		transactions = append(transactions, *transaction)
 	}
 
 	return transactions
+}
+
+func createHash(seq, priority, threshold, remainingTime int, now, deadline time.Time) [32]byte {
+	transactionSum := bytes.Join([][]byte{
+		[]byte(strconv.Itoa(seq)),
+		[]byte(stringWithCharset(16, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")),
+		[]byte(now.String()),
+		[]byte(deadline.String()),
+		[]byte(strconv.Itoa(priority)),
+		[]byte(strconv.Itoa(threshold)),
+		[]byte(strconv.Itoa(remainingTime)),
+	}, []byte{})
+
+	return sha256.Sum256(transactionSum)
 }
 
 func BytesToHash(b []byte) Hash {

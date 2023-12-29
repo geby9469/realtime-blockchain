@@ -9,21 +9,16 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"runtime"
 	"strings"
-	"sync"
 	"time"
 )
 
 var nodes map[string]string
 var blockPool []Block
-var mutex = new(sync.Mutex)
 
 func main() {
 	leaderIp, leaderHttpPort, leaderTcpPort, _ := loadEnv()
 	fmt.Printf("Leader Node Information [IP:%s][HTTP PORT:%s][TCP PORT:%s]\n", leaderIp, leaderHttpPort, leaderTcpPort)
-
-	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	go addNode(leaderTcpPort, leaderHttpPort)
 	go receiveFromClient(leaderHttpPort)
@@ -65,7 +60,6 @@ func receiveFromClient(leaderHttpPort string) {
 			log.Fatal(err)
 		}
 
-		// need to synchronize the block pool with processes. -> grpc
 	})
 	http.ListenAndServe(fmt.Sprintf(":%s", leaderHttpPort), nil)
 }
@@ -127,9 +121,9 @@ func addNode(leaderTcpPort, leaderHttpPort string) {
 				nodei := fmt.Sprintf("%s:%s", node.IP, node.TcpPort)
 				nodes[nodei] = node.HttpPort
 
-				getNodes(nodes) // heartbeat with miner
+				getNodes(nodes)
 
-				setPolicy(c) // set policy of network
+				setPolicy(c)
 
 				time.Sleep(time.Second * 5)
 			}
